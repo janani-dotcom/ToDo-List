@@ -1,0 +1,283 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>To-Do & Panda Pomodoro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{
+  box-sizing:border-box;
+  font-family: Arial, sans-serif;
+}
+
+body{
+  margin:0;
+  background: linear-gradient(135deg,#c2e9fb,#fcb69f);
+  min-height:100vh;
+}
+
+/* MENU BAR */
+nav{
+  background:#222;
+  color:#fff;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 20px;
+}
+
+nav h2{ margin:0; }
+
+nav button{
+  background:none;
+  border:none;
+  color:white;
+  font-size:16px;
+  margin-left:15px;
+  cursor:pointer;
+}
+
+nav button:hover{ color:#ffcc00; }
+
+/* PAGES */
+.page{ display:none; padding:20px; }
+.page.active{ display:block; }
+
+/* TODO */
+.todo-box{
+  max-width:600px;
+  margin:auto;
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 5px 15px rgba(0,0,0,0.2);
+}
+
+.todo-box h3{ text-align:center; }
+
+.todo-input{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.todo-input input{
+  flex:1;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
+}
+
+.todo-input button{
+  padding:10px 15px;
+  border:none;
+  border-radius:8px;
+  background:#28a745;
+  color:white;
+  cursor:pointer;
+}
+
+ul{ list-style:none; padding:0; }
+
+li{
+  background:#f1f1f1;
+  margin:8px 0;
+  padding:10px;
+  border-radius:8px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+
+.completed{
+  background:#d4edda;
+  text-decoration:line-through;
+}
+
+li button{
+  border:none;
+  background:#007bff;
+  color:white;
+  padding:5px 10px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+/* TIMER */
+.timer-box{
+  max-width:400px;
+  margin:auto;
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  text-align:center;
+  box-shadow:0 5px 15px rgba(0,0,0,0.2);
+}
+
+.timer{
+  font-size:48px;
+  margin:15px 0;
+}
+
+.timer-controls button{
+  padding:10px 15px;
+  margin:5px;
+  border:none;
+  border-radius:8px;
+  background:#ff6f61;
+  color:white;
+  cursor:pointer;
+}
+
+.panda{ font-size:80px; }
+.session-text{ font-weight:bold; }
+</style>
+</head>
+
+<body>
+
+<!-- MENU -->
+<nav>
+  <h2>My Planner</h2>
+  <div>
+    <button onclick="showPage('home')">Home</button>
+    <button onclick="showPage('timer')">Timer</button>
+  </div>
+</nav>
+
+<!-- HOME -->
+<div id="home" class="page active">
+  <div class="todo-box">
+    <h3>📝 To-Do List</h3>
+
+    <div class="todo-input">
+      <input type="text" id="taskInput" placeholder="Enter task">
+      <input type="date" id="dateInput">
+      <button onclick="addTask()">Add</button>
+    </div>
+
+    <h4>Tasks</h4>
+    <ul id="taskList"></ul>
+
+    <h4>Completed</h4>
+    <ul id="completedList"></ul>
+  </div>
+</div>
+
+<!-- TIMER -->
+<div id="timer" class="page">
+  <div class="timer-box">
+    <div class="panda">🐼</div>
+    <h3>Panda Pomodoro</h3>
+    <div class="session-text" id="sessionInfo">Session</div>
+    <div class="timer" id="time">25:00</div>
+
+    <div class="timer-controls">
+      <button onclick="startPomodoro()">Start</button>
+      <button onclick="resetPomodoro()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* PAGE SWITCH */
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* TODO WITH DUE DATE */
+function addTask(){
+  let task=document.getElementById("taskInput").value;
+  let date=document.getElementById("dateInput").value;
+  if(task==="") return;
+
+  let li=document.createElement("li");
+  li.innerHTML=`
+    <span>${task} <small>📅 ${date || "No date"}</small></span>
+    <button onclick="completeTask(this)">Done</button>
+  `;
+  document.getElementById("taskList").appendChild(li);
+
+  document.getElementById("taskInput").value="";
+  document.getElementById("dateInput").value="";
+}
+
+function completeTask(btn){
+  let li=btn.parentElement;
+  li.classList.add("completed");
+  btn.remove();
+  document.getElementById("completedList").appendChild(li);
+}
+
+/* POMODORO WITH SESSIONS */
+let sessions=0;
+let currentSession=1;
+let time=1500;
+let isBreak=false;
+let interval=null;
+
+function startPomodoro(){
+  if(interval) return;
+
+  if(sessions===0){
+    sessions=parseInt(prompt("How many sessions? (3 or 4)"));
+    if(!sessions) return;
+  }
+
+  interval=setInterval(()=>{
+    if(time<=0){
+      clearInterval(interval);
+      interval=null;
+
+      if(!isBreak){
+        isBreak=true;
+        time=300;
+        document.getElementById("sessionInfo").textContent="Break Time";
+        startPomodoro();
+      }else{
+        isBreak=false;
+        currentSession++;
+        if(currentSession>sessions){
+          alert("All Sessions Completed 🐼");
+          resetPomodoro();
+          return;
+        }
+        time=1500;
+        document.getElementById("sessionInfo").textContent=
+          `Session ${currentSession} of ${sessions}`;
+        startPomodoro();
+      }
+      return;
+    }
+    time--;
+    updateTime();
+  },1000);
+
+  updateTime();
+}
+
+function resetPomodoro(){
+  clearInterval(interval);
+  interval=null;
+  sessions=0;
+  currentSession=1;
+  isBreak=false;
+  time=1500;
+  document.getElementById("sessionInfo").textContent="Session";
+  updateTime();
+}
+
+function updateTime(){
+  let m=Math.floor(time/60);
+  let s=time%60;
+  document.getElementById("time").textContent=
+    `${m}:${s<10?'0'+s:s}`;
+}
+</script>
+
+</body>
+</html>
